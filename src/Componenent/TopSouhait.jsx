@@ -3,8 +3,21 @@ import { Card } from "primereact/card";
 import { Rating } from "primereact/rating";
 import React from "react";
 
+const lienDefault =
+  "https://firebasestorage.googleapis.com/v0/b/maniv-a665b.appspot.com/o/logo-v2-variant-bg-noir.png?alt=media&token=a7f54c87-1d7b-4090-a87d-37a83d7a2e66";
+
 const TopSouhait = ({ m }) => {
-  //   console.log(m);
+  const Header = () => (
+    <div className="flex align-items-center">
+      <img
+        src={m.uri ? m.uri : lienDefault}
+        alt=""
+        className="w-4rem border-circle h-4rem "
+        style={{ objectFit: "cover" }}
+      />
+      <div className="ml-3">{`${m.autheur} de ${m.ville}`}</div>
+    </div>
+  );
   return (
     <Card
       key={new Date().toString}
@@ -13,7 +26,7 @@ const TopSouhait = ({ m }) => {
         justifyContent: "center",
       }}
       className="border-1 surface-border border-round m-2 text-center py-5 px-3"
-      title={`${m.autheur} de ${m.ville}`}
+      title={<Header />}
     >
       <p
         className="m-2"
