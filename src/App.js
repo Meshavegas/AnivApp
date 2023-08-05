@@ -5,7 +5,6 @@ import { Card } from "primereact/card";
 import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
 import "primereact/resources/primereact.min.css"; //core css
 import "primeicons/primeicons.css";
-import { Rating } from "primereact/rating";
 import { classNames } from "primereact/utils";
 import { db } from "./fb-conf";
 import { Dialog } from "primereact/dialog";
@@ -18,21 +17,16 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { Menubar } from "primereact/menubar";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { InputTextarea } from "primereact/inputtextarea";
-import { format } from "date-fns/esm";
-import { Carousel } from "primereact/carousel";
-import { Toast } from "primereact/toast";
+
 import CardPost from "./Componenent/CardPost";
 import TopSouhait from "./Componenent/TopSouhait";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import Loading from "./Componenent/loader.jsx/Loading";
-
-// import { query, orderBy } from "firebase/firestore
 
 const App = () => {
   const [msg, setMsg] = useState([]);
@@ -41,6 +35,7 @@ const App = () => {
   const [formData, setformData] = useState({});
   const [msge, setMsge] = useState("");
   const [displayForm, setDisplayForm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [screenSize, setScreenSize] = useState(window.screen.width);
   const toast = useRef(null);
@@ -105,11 +100,16 @@ const App = () => {
     getMsg();
   }, [displayForm]);
   const onSubmit = (data) => {
-    if (msge.length === 0) {
+    if (msge.length <= 10) {
       console.log("message vide");
     } else {
+      setLoading(true);
       setformData(data);
-      createMsg(data.Prenom, data.Ville, msge);
+      createMsg(data.Prenom, data.Ville, msge).then((e) => {
+        setLoading(false);
+        setMsge("");
+        reset();
+      });
     }
   };
 
@@ -233,7 +233,7 @@ const App = () => {
         >
           <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
             <div className="field" style={{ margin: "1rem" }}>
-              <span className="p-float-label">
+              <span className="p-float-label mt-3">
                 <Controller
                   name="Prenom"
                   control={control}
@@ -292,7 +292,7 @@ const App = () => {
               />
             </div>
             <div className="card" style={{ margin: "1rem" }}>
-              <Button type="submit" label="Envoyer" />
+              <Button type="submit" label="Envoyer" loading={loading} />
             </div>
           </form>
         </Dialog>
