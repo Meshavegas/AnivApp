@@ -1,4 +1,4 @@
-import "./App.css";
+import "./App.scss";
 import React, { useState, useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Card } from "primereact/card";
@@ -16,6 +16,7 @@ import {
   query,
   where,
   orderBy,
+  limit,
 } from "firebase/firestore";
 import { Menubar } from "primereact/menubar";
 import { InputText } from "primereact/inputtext";
@@ -24,6 +25,13 @@ import { InputTextarea } from "primereact/inputtextarea";
 import { format } from "date-fns/esm";
 import { Carousel } from "primereact/carousel";
 import { Toast } from "primereact/toast";
+import CardPost from "./Componenent/CardPost";
+import TopSouhait from "./Componenent/TopSouhait";
+
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Navigation, Pagination } from "swiper/modules";
+import Loading from "./Componenent/loader.jsx/Loading";
+
 // import { query, orderBy } from "firebase/firestore
 
 const App = () => {
@@ -34,6 +42,7 @@ const App = () => {
   const [msge, setMsge] = useState("");
   const [displayForm, setDisplayForm] = useState(false);
 
+  const [screenSize, setScreenSize] = useState(window.screen.width);
   const toast = useRef(null);
 
   const showSuccess = () => {
@@ -69,7 +78,20 @@ const App = () => {
     collection(db, "message"),
     orderBy("date", "desc")
   );
-  const q = query(collection(db, "message"), where("reaction", ">=", 5));
+  const q = query(
+    collection(db, "message"),
+    where("reaction", ">=", 5),
+    limit(5)
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenSize(window.screen.width);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, [screenSize]);
 
   useEffect(() => {
     const getMsg = async () => {
@@ -77,7 +99,7 @@ const App = () => {
 
       setMsg(data.docs.map((docs) => ({ ...docs.data(), id: docs.id })));
       const data2 = await getDocs(q);
-
+      // console.log(data2);
       setTopMsg(data2.docs.map((docs) => ({ ...docs.data(), id: docs.id })));
     };
     getMsg();
@@ -90,62 +112,7 @@ const App = () => {
       createMsg(data.Prenom, data.Ville, msge);
     }
   };
-  const topMsgTemplate = (m) => {
-    return (
-      <Card
-        key={new Date().toString}
-        style={{
-          margin: "1rem",
-          justifyContent: "center",
-        }}
-        title={`${m.autheur} de ${m.ville}`}
-      >
-        <p
-          className="m-2"
-          style={{
-            lineHeight: "1.5",
-            fontSize: "1.2rem",
-            height: "4.5em",
-            overflow: "hidden",
-          }}
-        >
-          {`${m.corp}`}
-        </p>
-        <p>
-          <label
-            style={{
-              display: "flex",
-              fontSize: "1.6rem",
-              fontStyle: "italic",
-            }}
-          >
-            Note :
-            <Rating value={`${m.reaction}`} cancel={false} stars={5} />
-          </label>
-        </p>
-        <p style={{ textAlign: "right" }}>
-          {format(new Date(m.date.seconds * 1000), "dd-MMMM-yyyy a H:m:s")}
-        </p>
-      </Card>
-    );
-  };
-  const responsiveOptions = [
-    {
-      breakpoint: "1024px",
-      numVisible: 3,
-      numScroll: 3,
-    },
-    {
-      breakpoint: "600px",
-      numVisible: 2,
-      numScroll: 2,
-    },
-    {
-      breakpoint: "480px",
-      numVisible: 1,
-      numScroll: 1,
-    },
-  ];
+
   const createMsg = async (Prenom, Ville, message) => {
     const msg = collection(db, "message");
     await addDoc(msg, {
@@ -157,30 +124,7 @@ const App = () => {
     });
     setDisplayForm(false);
   };
-  const displayMsg = () => {};
-  const logo = (
-    <img
-      alt="logo"
-      src="https://picsum.photos/200"
-      height="40"
-      className="mr-2"
-    ></img>
-  );
 
-  const items = [
-    {
-      label: "Acceuil",
-      icon: "pi pi-fw pi-home",
-    },
-    {
-      label: "Comentaire",
-      icon: "pi pi-fw pi-discord",
-    },
-    {
-      label: "personne",
-      icon: "pi pi-fw pi-user",
-    },
-  ];
   return (
     <div>
       {/* <Toast
@@ -190,9 +134,8 @@ const App = () => {
       ></Toast> */}
 
       <div className="card">
-        <Menubar model={items} start={logo} />
-        <div className="card">
-          <Carousel
+        <div className="card flex flex-strech">
+          {/* <Carousel
             value={topMsg}
             numVisible={3}
             numScroll={3}
@@ -200,9 +143,42 @@ const App = () => {
             className="custom-carousel"
             circular
             autoplayInterval={3000}
-            itemTemplate={topMsgTemplate}
+            itemTemplate={(e) => <TopSouhait m={e} />}
             header={<h1 style={{ textAlign: "center" }}>Top Message</h1>}
-          />
+          /> */}
+
+          {!!topMsg?.length ? (
+            <Swiper
+              modules={[Navigation, Pagination, Autoplay]}
+              loop={true}
+              spaceBetween={5}
+              slidesPerView={
+                screenSize < 768
+                  ? 1
+                  : screenSize >= 768 && screenSize < 1024
+                  ? 2
+                  : screenSize <= 1024
+                  ? 2
+                  : 3
+              }
+              navigation={false}
+              autoplay={{
+                delay: 2000,
+                disableOnInteraction: false,
+              }}
+              pagination={{ clickable: true }}
+              onSlideChange={() => console.log("slide change")}
+              onSwiper={(swiper) => console.log(swiper)}
+            >
+              {topMsg.map((coffee, index) => (
+                <SwiperSlide key={index + coffee?.id}>
+                  <TopSouhait m={coffee} />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          ) : (
+            <Loading />
+          )}
         </div>
         <Card
           title="Nombre de Commentaire"
@@ -224,47 +200,17 @@ const App = () => {
             {msg.length}
           </span>
         </Card>
-        {msg.map((m) => {
-          return (
-            <Card
-              key={new Date().toString}
-              style={{
-                margin: "1rem",
-                justifyContent: "center",
-              }}
-              title={`${m.autheur} de ${m.ville}`}
-            >
-              <p
-                className="m-2"
-                style={{
-                  lineHeight: "1.5",
-                  fontSize: "1.2rem",
-                }}
-              >
-                {`${m.corp}`}
-              </p>
-              <p>
-                <label
-                  style={{
-                    display: "flex",
-                    fontSize: "1.6rem",
-                    fontStyle: "italic",
-                  }}
-                >
-                  Note :
-                  <Rating value={`${m.reaction}`} cancel={false} stars={6} />
-                </label>
-              </p>
-              <p style={{ textAlign: "right" }}>
-                {/* poster le 12/12/1200 a 12:30:12 */}
-                {format(
-                  new Date(m.date.seconds * 1000),
-                  "dd-MMMM-yyyy a H:m:s"
-                )}
-              </p>
-            </Card>
-          );
-        })}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          {msg.map((m) => {
+            return <CardPost m={m} />;
+          })}
+        </div>
       </div>
       <Button
         icon="pi pi-fw pi-plus"
