@@ -29,12 +29,18 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import Loading from "./Componenent/loader.jsx/Loading";
+import { groupBy } from "./utilis/groupBy";
+import GroupPost from "./Componenent/GroupPost";
+import "primereact/resources/themes/lara-light-indigo/theme.css";
+import "primereact/resources/primereact.min.css";
+import "primeicons/primeicons.css";
 
 const App = () => {
   const [file, setFile] = useState("");
   const [datas, setData] = useState({});
   const [per, setPerc] = useState(null);
   const [msg, setMsg] = useState([]);
+  const [msgAll, setMsgAll] = useState([]);
   const [topMsg, setTopMsg] = useState([]);
   const [form, setform] = useState(false);
   const [formData, setformData] = useState({});
@@ -144,8 +150,11 @@ const App = () => {
   useEffect(() => {
     const getMsg = async () => {
       const data = await getDocs(msgCollectionRef);
-
-      setMsg(data.docs.map((docs) => ({ ...docs.data(), id: docs.id })));
+      let dato = data.docs.map((docs) => ({ ...docs.data(), id: docs.id }));
+      data.docs.map((docs) => ({ ...docs.data(), id: docs.id }));
+      // console.log(groupBy(dato));
+      setMsg(groupBy(dato));
+      setMsgAll(dato);
       const data2 = await getDocs(q);
       // console.log(data2);
       setTopMsg(data2.docs.map((docs) => ({ ...docs.data(), id: docs.id })));
@@ -185,7 +194,7 @@ const App = () => {
       <Toast ref={toast}></Toast>
 
       <div className="card">
-        <div className="card flex flex-strech">
+        <div className="card ">
           {/* <Carousel
             value={topMsg}
             numVisible={3}
@@ -198,6 +207,18 @@ const App = () => {
             header={<h1 style={{ textAlign: "center" }}>Top Message</h1>}
           /> */}
 
+          <div
+            className="text-orange-500 text-4xl border-bottom-3"
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "center",
+              marginLeft: "10%",
+              marginRight: "10%",
+            }}
+          >
+            <div>Top souhait</div>
+          </div>
           {!!topMsg?.length ? (
             <Swiper
               modules={[Navigation, Pagination, Autoplay]}
@@ -231,37 +252,57 @@ const App = () => {
             <Loading />
           )}
         </div>
-        <Card
-          title="Nombre de Commentaire"
-          style={{
-            margin: "1rem",
-            position: "sticky",
-            justifyContent: "center",
-            background: "accff0",
-          }}
-          className="w-full md:w-8"
-        >
-          <span
+        <div className="flex  justify-content-centerw-full">
+          <Card
+            title="Nombre De Souhait"
             style={{
-              display: "flex",
-              textAlign: "center",
-              fontSize: "4rem",
+              margin: "1rem",
+              position: "sticky",
               justifyContent: "center",
+              background: "accff0",
+              marginLeft: "10%",
+              marginRight: "10%",
+              width: "100%",
             }}
           >
-            {msg.length}
-          </span>
-        </Card>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          {msg.map((m) => {
-            return <CardPost m={m} />;
-          })}
+            <span
+              style={{
+                display: "flex",
+                textAlign: "center",
+                fontSize: "4rem",
+                justifyContent: "center",
+              }}
+            >
+              {msgAll.length}
+            </span>
+          </Card>
+        </div>
+
+        <div>
+          {msg ? (
+            msg.map((e) => {
+              return (
+                <div key={e.key}>
+                  <div
+                    className="text-orange-500 text-4xl border-bottom-3"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      marginLeft: "10%",
+                      marginRight: "10%",
+                    }}
+                  >
+                    <div>Année</div>
+                    <div>{e.key}</div>
+                  </div>
+                  <GroupPost mesg={e} />
+                </div>
+              );
+            })
+          ) : (
+            <Loading />
+          )}
         </div>
       </div>
       <Button
@@ -274,6 +315,7 @@ const App = () => {
           height: "60px",
           borderRadius: "30px",
         }}
+        className="bg-orange-500 border-none"
         onClick={() => onClick()}
       />
       <div className="flex justify-content-center">

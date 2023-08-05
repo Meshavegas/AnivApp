@@ -42,12 +42,22 @@ const CardPost = ({ m }) => {
           }}
         >
           Note :
-          <Rating value={`${m.reaction}`} cancel={false} stars={6} />
+          <Rating
+            value={`${m.reaction}`}
+            cancel={false}
+            stars={6}
+            customIcons={{
+              emptyIcon: (
+                <i icon="pi pi-star-fill" style={{ color: "orange" }}></i>
+              ),
+              fullIcon: <i icon="pi pi-star" style={{ color: "orange" }}></i>,
+            }}
+          />
         </label>
       </p>
       <p style={{ textAlign: "right" }}>
         {/* poster le 12/12/1200 a 12:30:12 */}
-        {format(new Date(m.date.seconds * 1000), "dd-MMMM-yyyy a H:m:s")}
+        {format(new Date(m.date.seconds * 1000), "dd-MMMM-yyyy à H:m:s")}
       </p>
     </Card>
   );

@@ -11,6 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+.p-rating .p-rating-item .p-rating-icon {
+  color: #f97316 !important;
+}
+
 .swiper-button-next,
 .swiper-button-prev {
   color: #ff9f0d !important;
@@ -29,4 +33,15 @@ code {
 .swiper-pagination-bullet {
   background-color: #ff9f0d;
   font-size: 4rem;
+}
+
+.p-button {
+  background-color: #f97316 !important;
+  border: none;
+}
+.p-inputtext:enabled:focus {
+  border-color: #f97316 !important;
+}
+.p-inputtext:enabled:hover {
+  border-color: #f97316 !important;
 }
