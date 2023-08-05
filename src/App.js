@@ -6,7 +6,7 @@ import "primereact/resources/themes/lara-light-indigo/theme.css"; //theme
 import "primereact/resources/primereact.min.css"; //core css
 import "primeicons/primeicons.css";
 import { classNames } from "primereact/utils";
-import { db } from "./fb-conf";
+import { db, storage } from "./fb-conf";
 import { Dialog } from "primereact/dialog";
 import {
   addDoc,
@@ -20,15 +20,20 @@ import {
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { InputTextarea } from "primereact/inputtextarea";
-
+import { FileUpload } from "primereact/fileupload";
+import { Toast } from "primereact/toast";
 import CardPost from "./Componenent/CardPost";
 import TopSouhait from "./Componenent/TopSouhait";
 
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import Loading from "./Componenent/loader.jsx/Loading";
 
 const App = () => {
+  const [file, setFile] = useState("");
+  const [datas, setData] = useState({});
+  const [per, setPerc] = useState(null);
   const [msg, setMsg] = useState([]);
   const [topMsg, setTopMsg] = useState([]);
   const [form, setform] = useState(false);
@@ -54,6 +59,15 @@ const App = () => {
     ville: "",
     message: "",
     date: null,
+  };
+
+  const onUpload = (e) => {
+    console.log(e);
+    toast.current.show({
+      severity: "info",
+      summary: "Success",
+      detail: "File Uploaded",
+    });
   };
 
   const onClick = () => {
@@ -89,6 +103,45 @@ const App = () => {
   }, [screenSize]);
 
   useEffect(() => {
+    const uploadFile = () => {
+      const name = new Date().getTime() + file.name;
+
+      console.log(name);
+      const storageRef = ref(storage, file.name);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log("Upload is " + progress + "% done");
+          setPerc(progress);
+          switch (snapshot.state) {
+            case "paused":
+              console.log("Upload is paused");
+              break;
+            case "running":
+              console.log("Upload is running");
+              break;
+            default:
+              break;
+          }
+        },
+        (error) => {
+          console.log(error);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            setData(downloadURL);
+          });
+        }
+      );
+    };
+    file && uploadFile();
+  }, [file]);
+
+  useEffect(() => {
     const getMsg = async () => {
       const data = await getDocs(msgCollectionRef);
 
@@ -99,13 +152,14 @@ const App = () => {
     };
     getMsg();
   }, [displayForm]);
+
   const onSubmit = (data) => {
     if (msge.length <= 10) {
       console.log("message vide");
     } else {
       setLoading(true);
       setformData(data);
-      createMsg(data.Prenom, data.Ville, msge).then((e) => {
+      createMsg(data.Prenom, data.Ville, msge, datas).then((e) => {
         setLoading(false);
         setMsge("");
         reset();
@@ -113,13 +167,14 @@ const App = () => {
     }
   };
 
-  const createMsg = async (Prenom, Ville, message) => {
+  const createMsg = async (Prenom, Ville, message, datas) => {
     const msg = collection(db, "message");
     await addDoc(msg, {
       autheur: Prenom,
       corp: message,
       ville: Ville,
       date: new Date(),
+      uri: datas,
       reaction: Math.floor(Math.random() * (5 - 1 + 1)) + 1,
     });
     setDisplayForm(false);
@@ -127,11 +182,7 @@ const App = () => {
 
   return (
     <div>
-      {/* <Toast
-        ref={(el) => {
-          this.toast = el;
-        }}
-      ></Toast> */}
+      <Toast ref={toast}></Toast>
 
       <div className="card">
         <div className="card flex flex-strech">
@@ -188,6 +239,7 @@ const App = () => {
             justifyContent: "center",
             background: "accff0",
           }}
+          className="w-full md:w-8"
         >
           <span
             style={{
@@ -290,6 +342,17 @@ const App = () => {
                 rows={5}
                 cols={30}
               />
+            </div>
+            <div className="field" style={{ margin: "1rem" }}>
+              {/* <FileUpload
+                mode="basic"
+                name="demo[]"
+                url="/api/upload"
+                accept="image/*"
+                maxFileSize={1000000}
+                onUpload={onUpload}
+              /> */}
+              <input type="file" onChange={(e) => setFile(e.target.files[0])} />
             </div>
             <div className="card" style={{ margin: "1rem" }}>
               <Button type="submit" label="Envoyer" loading={loading} />
