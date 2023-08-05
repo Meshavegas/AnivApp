@@ -3,11 +3,24 @@ import { Rating } from "primereact/rating";
 import React from "react";
 import { format } from "date-fns/esm";
 
+const lienDefault =
+  "https://firebasestorage.googleapis.com/v0/b/maniv-a665b.appspot.com/o/logo-v2-variant-bg-noir.png?alt=media&token=a7f54c87-1d7b-4090-a87d-37a83d7a2e66";
 const CardPost = ({ m }) => {
+  const Header = () => (
+    <div className="flex align-items-center">
+      <img
+        src={m.uri ? m.uri : lienDefault}
+        alt=""
+        className="w-4rem border-circle h-4rem "
+        style={{ objectFit: "cover" }}
+      />
+      <div className="ml-3">{`${m.autheur} de ${m.ville}`}</div>
+    </div>
+  );
   return (
     <Card
       key={new Date().toString}
-      title={`${m.autheur} de ${m.ville}`}
+      title={<Header />}
       className="md:w-4 mx-3 my-3 w-full"
     >
       <p
