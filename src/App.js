@@ -16,7 +16,11 @@ import {
   where,
   orderBy,
   limit,
+  onSnapshot,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
+import "primeicons/primeicons.css";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
 import { InputTextarea } from "primereact/inputtextarea";
@@ -24,6 +28,12 @@ import { FileUpload } from "primereact/fileupload";
 import { Toast } from "primereact/toast";
 import CardPost from "./Componenent/CardPost";
 import TopSouhait from "./Componenent/TopSouhait";
+
+import { AiFillGift } from "react-icons/ai";
+import { FcCheckmark } from "react-icons/fc";
+
+import { MdOutlineError } from "react-icons/md";
+import { InputNumber } from "primereact/inputnumber";
 
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -34,6 +44,7 @@ import GroupPost from "./Componenent/GroupPost";
 import "primereact/resources/themes/lara-light-indigo/theme.css";
 import "primereact/resources/primereact.min.css";
 import "primeicons/primeicons.css";
+import axios from "axios";
 
 const App = () => {
   const [file, setFile] = useState("");
@@ -42,14 +53,117 @@ const App = () => {
   const [msg, setMsg] = useState([]);
   const [msgAll, setMsgAll] = useState([]);
   const [topMsg, setTopMsg] = useState([]);
+  const [motnt, setMotnt] = useState(0);
+  const [numero, setNumero] = useState();
   const [form, setform] = useState(false);
   const [formData, setformData] = useState({});
   const [msge, setMsge] = useState("");
   const [displayForm, setDisplayForm] = useState(false);
+  const [displayFormGif, setDisplayFormGif] = useState(false);
+  const [displaySucess, setDisplaySucess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const [screenSize, setScreenSize] = useState(window.screen.width);
+
+  // state pour validations
+  const [showValidation, setShowValidation] = useState(false);
+
+  const [valid, setValid] = useState(false);
+  const [errorPayement, setErrorPayement] = useState("");
+  const [successPayement, setSuccessPayement] = useState("");
+  const [references, setReferences] = useState("");
+  // const [timerValue, setTimerValue] = useState();
+  const [payCounter, setPayCounter] = useState(300);
+
+  let timer;
+  let payTimer;
+
   const toast = useRef(null);
+
+  const payCheck = async (preference) => {
+    try {
+      const res = await axios.get(
+        `https://faroty-api.tanouacademy.com/api/v1/check/${preference}`
+      );
+
+      if (!res.data.error) {
+        return true;
+      } else if (res.data.error_msg === "no_payment_received") {
+        return false;
+      } else if (res.data.error_msg === "payment_request_pending") {
+        return null;
+      } else if (res.data.error_msg === "no_pay_request_found") {
+        return false;
+      }
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const onPaySubmit = (status) => {
+    stopPayTimer();
+
+    setReferences("");
+
+    if (status) {
+      // alert('Votre vote a été pris en compte')
+      setSuccessPayement("mercie pour votre cadeaux");
+      setShowValidation(false);
+      setDisplayFormGif(false);
+      setDisplaySucess(true);
+      setIsSuccess(true);
+      setLoading(false);
+      showSuccess();
+    } else {
+      setErrorPayement("une erreur c'est produite veuillez reesayer");
+      setShowValidation(false);
+      setDisplayFormGif(false);
+      setDisplaySucess(true);
+      setIsSuccess(false);
+      setLoading(false);
+    }
+  };
+
+  const timerValues = () => {
+    const minutes = Math.floor(payCounter / 60);
+    const seconds = payCounter % 60;
+    return `${minutes < 10 ? "0" + minutes : minutes}:${
+      seconds < 10 ? "0" + seconds : seconds
+    }`;
+  };
+
+  const initPayTimer = () => {
+    setShowValidation(true);
+    payTimer = setInterval(() => {
+      setPayCounter((prevCounter) => prevCounter - 1);
+    }, 1000);
+  };
+
+  const stopPayTimer = () => {
+    clearInterval(payTimer);
+    setPayCounter(5 * 60);
+  };
+
+  const initInterval = (preference) => {
+    let count = 0;
+    timer = setInterval(async () => {
+      // console.log(preference);
+
+      const status = await payCheck(preference);
+      if (status !== null) {
+        console.log("satus+++++++++++", status);
+        clearInterval(timer);
+        onPaySubmit(status);
+      }
+      count++;
+
+      if (count >= 5) {
+        clearInterval(timer);
+        onPaySubmit(false);
+      }
+    }, 10000);
+  };
 
   const showSuccess = () => {
     toast.current.show({
@@ -60,6 +174,40 @@ const App = () => {
     });
   };
 
+  const handleSubmitPayement = async (data) => {
+    setErrorPayement(null);
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        "https://faroty-api.tanouacademy.com/api/v1/join",
+        {
+          fhid: "3692428454",
+          amount: motnt,
+          fullname: data.Prenom,
+          city: data.Ville,
+          phone: numero,
+        }
+      );
+
+      const responseData = response.data;
+      if (responseData.error) {
+        setErrorPayement(responseData.message);
+        setLoading(false);
+      } else {
+        setValid(true);
+        console.log(responseData);
+        setReferences(responseData.data.reference);
+        initInterval(responseData.data.reference);
+        initPayTimer();
+        setLoading(false);
+      }
+    } catch (error) {
+      console.log(error);
+      setErrorPayement("Une erreur est survenue lors de la requête.");
+      setLoading(false);
+    }
+  };
+
   const defaultValue = {
     prenom: "",
     ville: "",
@@ -67,20 +215,19 @@ const App = () => {
     date: null,
   };
 
-  const onUpload = (e) => {
-    console.log(e);
-    toast.current.show({
-      severity: "info",
-      summary: "Success",
-      detail: "File Uploaded",
-    });
-  };
-
   const onClick = () => {
     setDisplayForm(true);
   };
+  const onClickGift = () => {
+    setDisplayFormGif(true);
+  };
   const onHide = () => {
     setDisplayForm(false);
+    setDisplayFormGif(false);
+  };
+  const onHideValidation = () => {
+    setShowValidation(false);
+    setDisplaySucess(false);
   };
   const {
     control,
@@ -91,12 +238,18 @@ const App = () => {
 
   const msgCollectionRef = query(
     collection(db, "message"),
+    where("active", "==", true),
     orderBy("date", "desc")
   );
   const q = query(
     collection(db, "message"),
     where("reaction", ">=", 5),
     limit(5)
+  );
+
+  const deleteq = query(
+    collection(db, "message"),
+    where("corp", "==", "Merci pour tes 500 FCFA")
   );
 
   useEffect(() => {
@@ -148,13 +301,29 @@ const App = () => {
   }, [file]);
 
   useEffect(() => {
+    const deleteDocs = () => {
+      onSnapshot(deleteq, (snapShot) => {
+        snapShot.docs.forEach((docs) => {
+          // Suppression du doc
+          // "cities", "yftq9RGp4jWNSyBZ1D6L");
+
+          // console.log(docs.id);
+          deleteDoc(doc(db, "message", docs.id));
+        });
+      });
+    };
+
+    // deleteDocs();
     const getMsg = async () => {
-      const data = await getDocs(msgCollectionRef);
-      let dato = data.docs.map((docs) => ({ ...docs.data(), id: docs.id }));
-      data.docs.map((docs) => ({ ...docs.data(), id: docs.id }));
-      // console.log(groupBy(dato));
-      setMsg(groupBy(dato));
-      setMsgAll(dato);
+      onSnapshot(msgCollectionRef, (snapShot) => {
+        let list = [];
+        snapShot.docs.forEach((doc) => {
+          list.push({ ...doc.data(), id: doc.id });
+        });
+        setMsg(groupBy(list));
+        // console.log(list);
+        setMsgAll(list);
+      });
       const data2 = await getDocs(q);
       // console.log(data2);
       setTopMsg(data2.docs.map((docs) => ({ ...docs.data(), id: docs.id })));
@@ -170,6 +339,7 @@ const App = () => {
       setformData(data);
       createMsg(data.Prenom, data.Ville, msge, datas).then((e) => {
         setLoading(false);
+        showSuccess();
         setMsge("");
         reset();
       });
@@ -318,14 +488,27 @@ const App = () => {
         className="bg-orange-500 border-none"
         onClick={() => onClick()}
       />
+      <Button
+        icon={<AiFillGift style={{ fontSize: "1.6rem" }} />}
+        style={{
+          position: "fixed",
+          bottom: "40px",
+          right: "110px",
+          width: "60px",
+          height: "60px",
+          borderRadius: "30px",
+        }}
+        className="bg-orange-500 border-none"
+        onClick={() => onClickGift()}
+      />
       <div className="flex justify-content-center">
         <Dialog
           visible={displayForm}
-          style={{ width: "90vw" }}
+          style={{ width: "90vw", maxWidth: "500px" }}
           onHide={() => onHide()}
           header="Envoyer un souhait"
         >
-          <form onSubmit={handleSubmit(onSubmit)} className="p-fluid">
+          <form onSubmit={handleSubmit(onSubmit)} className="p-fluid mt-5">
             <div className="field" style={{ margin: "1rem" }}>
               <span className="p-float-label mt-3">
                 <Controller
@@ -386,20 +569,168 @@ const App = () => {
               />
             </div>
             <div className="field" style={{ margin: "1rem" }}>
-              {/* <FileUpload
-                mode="basic"
-                name="demo[]"
-                url="/api/upload"
-                accept="image/*"
-                maxFileSize={1000000}
-                onUpload={onUpload}
-              /> */}
               <input type="file" onChange={(e) => setFile(e.target.files[0])} />
             </div>
             <div className="card" style={{ margin: "1rem" }}>
               <Button type="submit" label="Envoyer" loading={loading} />
             </div>
           </form>
+        </Dialog>
+        <Dialog
+          visible={displayFormGif}
+          style={{ width: "90vw", maxWidth: "500px" }}
+          onHide={() => onHide()}
+          header="Envoyer un depot"
+        >
+          <form
+            onSubmit={handleSubmit(handleSubmitPayement)}
+            className="p-fluid mt-5"
+          >
+            <div className="field" style={{ margin: "1rem" }}>
+              <span className="p-float-label mt-3">
+                <InputNumber
+                  inputId="montant"
+                  value={motnt}
+                  onValueChange={(e) => setMotnt(e.value)}
+                  mode="currency"
+                  currency="XAF"
+                  locale="cm-CM"
+                />
+
+                <label
+                  htmlFor="montant"
+                  className={classNames({ "p-error": errors.name })}
+                >
+                  Votre contribution (en XAF)*
+                </label>
+              </span>
+            </div>
+            <div className="field" style={{ margin: "1rem" }}>
+              <span className="p-float-label">
+                <Controller
+                  name="Prenom"
+                  control={control}
+                  rules={{ required: "Prenoms requis" }}
+                  render={({ field, fieldState }) => (
+                    <InputText
+                      id={field.name}
+                      {...field}
+                      className={classNames({
+                        "p-invalid": fieldState.invalid,
+                      })}
+                    />
+                  )}
+                />
+                <label
+                  htmlFor="prenon"
+                  className={classNames({ "p-error": errors.name })}
+                >
+                  Prenom*
+                </label>
+              </span>
+            </div>
+            <div className="field" style={{ margin: "1rem" }}>
+              <span className="p-float-label">
+                <Controller
+                  name="Ville"
+                  control={control}
+                  rules={{ required: "ville requis" }}
+                  render={({ field, fieldState }) => (
+                    <InputText
+                      id={field.name}
+                      {...field}
+                      className={classNames({
+                        "p-invalid": fieldState.invalid,
+                      })}
+                    />
+                  )}
+                />
+                <label
+                  htmlFor="ville"
+                  className={classNames({ "p-error": errors.name })}
+                >
+                  Ville*
+                </label>
+              </span>
+            </div>
+            <div className="card" style={{ margin: "1rem" }}>
+              <div className="p-inputgroup">
+                <span className="p-inputgroup-addon">+237</span>
+                <InputText
+                  placeholder="Numero OM ou MOMO"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="field" style={{ margin: "1rem", color: "red" }}>
+              {errorPayement}
+            </div>
+            <div className="field" style={{ margin: "1rem", color: "green" }}>
+              {successPayement}
+            </div>
+            <div className="field" style={{ margin: "1rem" }}>
+              <input type="file" onChange={(e) => setFile(e.target.files[0])} />
+            </div>
+            <div className="card" style={{ margin: "1rem" }}>
+              <Button type="submit" label="Envoyer" loading={loading} />
+            </div>
+          </form>
+        </Dialog>
+        <Dialog
+          visible={showValidation}
+          style={{ width: "85vw", maxWidth: "450px" }}
+          onHide={() => onHideValidation()}
+          header="Validation en attente"
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              fontSize: "1.4rem",
+            }}
+          >
+            Validation :{" "}
+            <h1 style={{ fontSize: "1.6rem", marginLeft: "10px" }}>
+              {timerValues()}{" "}
+            </h1>
+          </div>
+        </Dialog>
+        <Dialog
+          visible={displaySucess}
+          style={{ width: "90vw", maxWidth: "500px" }}
+          onHide={() => onHideValidation()}
+          header="Status de la requete"
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+            }}
+          >
+            {isSuccess ? (
+              <>
+                <FcCheckmark
+                  style={{ fontSize: "5em", color: "green" }}
+                  color="green"
+                />{" "}
+                <div style={{ marginTop: "20px" }}>Merci pour ton cadeaux</div>
+              </>
+            ) : (
+              <>
+                <MdOutlineError
+                  style={{ fontSize: "5em", color: "red" }}
+                  color="green"
+                />{" "}
+                <div style={{ marginTop: "20px" }}>
+                  Une erreur c'est produit
+                </div>
+              </>
+            )}
+          </div>
         </Dialog>
       </div>
     </div>
