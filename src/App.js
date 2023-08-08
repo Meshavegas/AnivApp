@@ -263,6 +263,7 @@ const App = () => {
 
   useEffect(() => {
     const uploadFile = () => {
+      setLoading(true);
       const name = new Date().getTime() + file.name;
 
       console.log(name);
@@ -289,10 +290,12 @@ const App = () => {
         },
         (error) => {
           console.log(error);
+          setLoading(false);
         },
         () => {
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             setData(downloadURL);
+            setLoading(false);
           });
         }
       );
@@ -354,6 +357,7 @@ const App = () => {
       ville: Ville,
       date: new Date(),
       uri: datas,
+      active: true,
       reaction: Math.floor(Math.random() * (5 - 1 + 1)) + 1,
     });
     setDisplayForm(false);
@@ -390,34 +394,36 @@ const App = () => {
             <div>Top souhait</div>
           </div>
           {!!topMsg?.length ? (
-            <Swiper
-              modules={[Navigation, Pagination, Autoplay]}
-              loop={true}
-              spaceBetween={5}
-              slidesPerView={
-                screenSize < 768
-                  ? 1
-                  : screenSize >= 768 && screenSize < 1024
-                  ? 2
-                  : screenSize <= 1024
-                  ? 2
-                  : 3
-              }
-              navigation={false}
-              autoplay={{
-                delay: 2000,
-                disableOnInteraction: false,
-              }}
-              pagination={{ clickable: true }}
-              onSlideChange={() => console.log("slide change")}
-              onSwiper={(swiper) => console.log(swiper)}
-            >
-              {topMsg.map((coffee, index) => (
-                <SwiperSlide key={index + coffee?.id}>
-                  <TopSouhait m={coffee} />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            <div className="mr-3 ml-3">
+              <Swiper
+                modules={[Navigation, Pagination, Autoplay]}
+                loop={true}
+                spaceBetween={5}
+                slidesPerView={
+                  screenSize < 768
+                    ? 1
+                    : screenSize >= 768 && screenSize < 1024
+                    ? 2
+                    : screenSize <= 1024
+                    ? 2
+                    : 3
+                }
+                navigation={false}
+                autoplay={{
+                  delay: 2000,
+                  disableOnInteraction: false,
+                }}
+                pagination={{ clickable: true }}
+                onSlideChange={() => console.log("slide change")}
+                onSwiper={(swiper) => console.log(swiper)}
+              >
+                {topMsg.map((coffee, index) => (
+                  <SwiperSlide key={index + coffee?.id}>
+                    <TopSouhait m={coffee} />
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            </div>
           ) : (
             <Loading />
           )}
