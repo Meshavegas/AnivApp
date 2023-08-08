@@ -50,9 +50,9 @@ const TopSouhait = ({ m }) => {
           Note :
           <Rating value={`${m.reaction}`} cancel={false} stars={5} />
         </label>
-      </p>
-      <p style={{ textAlign: "right" }}>
-        {format(new Date(m.date.seconds * 1000), "dd-MMMM-yyyy a H:m:s")}
+        <p style={{ textAlign: "right" }}>
+          {format(new Date(m.date.seconds * 1000), "dd-MMMM-yyyy a H:m:s")}
+        </p>
       </p>
     </Card>
   );
