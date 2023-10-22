@@ -181,7 +181,7 @@ const App = () => {
       const response = await axios.post(
         "https://faroty-api.tanouacademy.com/api/v1/join",
         {
-          fhid: "3692428454",
+          fhid: "1724627979",
           amount: motnt,
           fullname: data.Prenom,
           city: data.Ville,
@@ -195,7 +195,6 @@ const App = () => {
         setLoading(false);
       } else {
         setValid(true);
-        console.log(responseData);
         setReferences(responseData.data.reference);
         initInterval(responseData.data.reference);
         initPayTimer();
