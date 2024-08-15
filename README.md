@@ -37,7 +37,7 @@ Ce projet est une application web développée avec React et Vite, permettant de
    ```
 2. Accédez au dossier du projet :
    ```bash
-   cd collecte-anniversaire
+   cd AnivApp
    ```
 3. Installez les dépendances :
    ```bash
@@ -96,6 +96,6 @@ Ce projet est sous licence MIT. Consultez le fichier [LICENSE](LICENSE) pour plu
 
 ## Auteurs
 
-- **Votre Nom** - *Développeur principal* - [Votre Profil GitHub](https://github.com/meshavegas)
+- **Mesha Vegas** - *Développeur principal* - [Votre Profil GitHub](https://github.com/meshavegas)
 
 ---
